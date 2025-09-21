@@ -3,7 +3,7 @@ from PIL import Image, ImageOps
 import streamlit as st
 
 os.environ["KERAS_BACKEND"] = "tensorflow"
-os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"  # hide TF INFO/WARN
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2" 
 
 import tensorflow as tf
 import keras
@@ -15,7 +15,6 @@ tf.config.optimizer.set_experimental_options({"disable_meta_optimizer": True})
 CLASS_NAMES = ["Dark", "Green", "Light", "Medium"]
 IMG_SIZE = 224
 
-# Optional metadata produced at training time
 for meta_name in ["coffee_meta.json", "resnet50_coffee_final.meta.json"]:
     if os.path.exists(meta_name):
         try:
@@ -32,24 +31,21 @@ st.caption(f"Uploads resized to {IMG_SIZE}×{IMG_SIZE} · Classes: {', '.join(CL
 
 @st.cache_resource
 def load_model_and_flags():
-    # Load my keras model
     m = keras.models.load_model(
         "resnet50_coffee_final.keras",
         compile=False,
         custom_objects={
-            "preprocess_input": preprocess_input,   # function used inside Lambda
-            "resnet50_preproc": preprocess_input,   # your Lambda layer name
+            "preprocess_input": preprocess_input,   
+            "resnet50_preproc": preprocess_input,   
         },
         safe_mode=False,
     )
 
-    # Preprocessing detection
     names = [l.name.lower() for l in m.layers]
     has_preproc = any(
         ("preproc" in n) or ("rescaling" in n) or ("normalization" in n) for n in names
     )
 
-    # Warm up once to avoid the slow first predict + progress bar
     _ = m.predict(np.zeros((1, IMG_SIZE, IMG_SIZE, 3), dtype="float32"), verbose=0)
     return m, has_preproc
 
@@ -59,12 +55,11 @@ st.caption(f"Model internal preprocessing: {'ON' if HAS_PREPROC else 'OFF'}")
 def prepare(img: Image.Image):
     img = ImageOps.exif_transpose(img).convert("RGB").resize((IMG_SIZE, IMG_SIZE))
     x = np.asarray(img).astype("float32")
-    # Check if it has preprocessing and does it if it doesn'.t
     if not HAS_PREPROC:
         x = preprocess_input(x)
-    return x[None, ...]  # (1, H, W, 3)
+    return x[None, ...] 
 
-file = st.file_uploader("Upload an image", type=["jpg","jpeg","png","webp"]) # Allows these types of images
+file = st.file_uploader("Upload an image", type=["jpg","jpeg","png","webp"])
 if file:
     img = Image.open(file)
     st.image(img, caption="Uploaded", use_column_width=True)
